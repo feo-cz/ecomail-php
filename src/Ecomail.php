@@ -402,20 +402,22 @@ class Ecomail
             'key: ' . $this->key
         ));
 
-        $output = curl_exec($ch);
+        $output     = curl_exec($ch);
+        $httpcode   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         curl_close($ch);
 
-        switch ($this->response) {
-            case self::JSONArray:
-            case self::JSONObject:
-                if (is_object(json_decode($output))) {
-                    $output = json_decode($output, $this->response == self::JSONObject ? false : true);
-                }
-                break;
+        if(in_array($httpcode, [400])) {
+            throw new EcomailException($output);
         }
 
-        return $output;
+        $result = json_decode($output, $this->response == self::JSONObject ? false : true);
+
+        if(json_last_error()) {
+            throw new EcomailException(json_last_error_msg());
+        }
+
+        return $result;
     }
 
 }
